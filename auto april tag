@@ -1,0 +1,174 @@
+/*AprilTag Setup
+Make sure you have the AprilTag library set up in your FTC project. You can usually find the library in the FTC SDK repository. Here's an overview of how to add it:
+
+Add AprilTag dependencies: Include the AprilTag library in your project.
+Add necessary imports: Import classes for handling AprilTag detection.
+
+Key Additions and Changes
+AprilTag Detection Pipeline:
+
+The AprilTagDetectionPipeline class should be a part of your library. Ensure you have it correctly imported and set up.
+Vuforia Initialization:
+
+The initVuforia() method initializes Vuforia with your specific parameters.
+Tag Detection Logic:
+
+In the detectAprilTag() method, the robot checks for detected tags and performs actions based on the tag's ID.
+You can customize the actions for different tag IDs.
+Telemetry:
+
+The code adds telemetry updates to help you debug and view the detected tag information.
+Notes
+Make sure you replace "YOUR-VUFORIA-KEY" with your actual Vuforia license key.
+Depending on your competition setup, you might need to adjust the camera configuration.
+The AprilTag library and the appropriate configurations should be included in your project. Check the FTC documentation for details on integrating Vuforia and the AprilTag detection library.
+package org.firstinspires.ftc.teamcode.MechamTest;
+*/
+
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+
+
+@Autonomous(name="FTC KeziaAutoWithAprilTag", group="Linear OpMode")
+public class BasicMtechamAutoWithAprilTag extends OpMode {
+
+    // Declare OpMode members
+    private ElapsedTime runtime = new ElapsedTime();
+    private DcMotor frontLeft = null;
+    private DcMotor backLeft = null;
+    private DcMotor frontRight = null;
+    private DcMotor backRight = null;
+    private DcMotor linearMotor = null;
+    private DcMotor backArm = null;
+    private Servo gripperServo = null;
+
+    private AprilTagDetectionPipeline pipeline; // AprilTag pipeline
+    private VuforiaLocalizer vuforia;
+
+    // Constants for robot movement
+    private static final int FORWARD_DISTANCE = 1000; // Adjust as needed for distance
+    private static final double MOTOR_POWER = 0.5; // Adjust speed
+
+    @Override
+    public void init() {
+        // Initialize drive motors
+        frontLeft = hardwareMap.get(DcMotor.class, "leftFront");
+        backLeft = hardwareMap.get(DcMotor.class, "leftBack");
+        frontRight = hardwareMap.get(DcMotor.class, "rightFront");
+        backRight = hardwareMap.get(DcMotor.class, "rightBack");
+
+        // Reverse right motors
+        frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRight.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        // Initialize other motors and servos
+        linearMotor = hardwareMap.get(DcMotor.class, "arm");
+        backArm = hardwareMap.get(DcMotor.class, "backArm");
+        gripperServo = hardwareMap.get(Servo.class, "claw");
+
+        // Initialize Vuforia for AprilTag detection
+        initVuforia();
+        pipeline = new AprilTagDetectionPipeline();
+        vuforia.setPipeline(pipeline);
+
+        // Set all motors to zero power
+        frontLeft.setPower(0);
+        backLeft.setPower(0);
+        frontRight.setPower(0);
+        backRight.setPower(0);
+        linearMotor.setPower(0);
+        backArm.setPower(0);
+    }
+
+    @Override
+    public void start() {
+        runtime.reset();
+        // Start the AprilTag detection
+        detectAprilTag();
+    }
+
+    @Override
+    public void loop() {
+        // Loop can remain empty, as the main logic is in the start method
+    }
+
+    private void detectAprilTag() {
+        // Scan for AprilTags
+        if (pipeline.getLatestDetections().size() > 0) {
+            // Process detections
+            for (AprilTagDetection tag : pipeline.getLatestDetections()) {
+                telemetry.addData("Tag ID", tag.id);
+                // Add logic based on tag ID
+                if (tag.id == 1) { // Example tag ID
+                    // Perform actions based on detection
+                    moveForward(FORWARD_DISTANCE);
+                    gripperServo.setPosition(0.12); // Open gripper
+                    sleep(1000);
+                    moveBackward(FORWARD_DISTANCE);
+                    break;
+                }
+            }
+        } else {
+            telemetry.addData("No tags detected", "");
+        }
+
+        telemetry.update();
+        stopMotors();
+    }
+
+    private void moveForward(int distance) {
+        int targetPosition = frontLeft.getCurrentPosition() + distance;
+        setMotorTargetPosition(targetPosition);
+        while (frontLeft.isBusy() || backLeft.isBusy() || frontRight.isBusy() || backRight.isBusy()) {
+            // Wait for motors to reach the target position
+        }
+    }
+
+    private void moveBackward(int distance) {
+        int targetPosition = frontLeft.getCurrentPosition() - distance;
+        setMotorTargetPosition(targetPosition);
+        while (frontLeft.isBusy() || backLeft.isBusy() || frontRight.isBusy() || backRight.isBusy()) {
+            // Wait for motors to reach the target position
+        }
+    }
+
+    private void setMotorTargetPosition(int targetPosition) {
+        frontLeft.setTargetPosition(targetPosition);
+        backLeft.setTargetPosition(targetPosition);
+        frontRight.setTargetPosition(targetPosition);
+        backRight.setTargetPosition(targetPosition);
+
+        frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        frontLeft.setPower(MOTOR_POWER);
+        backLeft.setPower(MOTOR_POWER);
+        frontRight.setPower(MOTOR_POWER);
+        backRight.setPower(MOTOR_POWER);
+    }
+
+    private void stopMotors() {
+        frontLeft.setPower(0);
+        backLeft.setPower(0);
+        frontRight.setPower(0);
+        backRight.setPower(0);
+    }
+
+    private void initVuforia() {
+        // Initialize Vuforia configuration
+        // (Replace "YOUR-VUFORIA-KEY" with your actual Vuforia key)
+        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
+        parameters.vuforiaLicenseKey = "YOUR-VUFORIA-KEY";
+        parameters.cameraName = hardwareMap.get(WebcamName.class, "Webcam");
+
+        vuforia = ClassFactory.getInstance().createVuforia(parameters);
+    }
+}
