@@ -1,0 +1,118 @@
+package org.firstinspires.ftc.teamcode.MechamTest;
+
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+@Autonomous(name="FTC KeziaAutoTest", group="Linear OpMode")
+public class BasicMtechamAuto extends OpMode {
+
+    // Declare OpMode members
+    private ElapsedTime runtime = new ElapsedTime();
+    private DcMotor frontLeft = null;
+    private DcMotor backLeft = null;
+    private DcMotor frontRight = null;
+    private DcMotor backRight = null;
+    private DcMotor linearMotor = null;
+    private DcMotor backArm = null;
+    private Servo gripperServo = null;
+
+    // Constants for robot movement
+    private static final int FORWARD_DISTANCE = 1000; // Adjust as needed for distance
+    private static final double MOTOR_POWER = 0.5; // Adjust speed
+
+    @Override
+    public void init() {
+        // Initialize drive motors
+        frontLeft = hardwareMap.get(DcMotor.class, "leftFront");
+        backLeft = hardwareMap.get(DcMotor.class, "leftBack");
+        frontRight = hardwareMap.get(DcMotor.class, "rightFront");
+        backRight = hardwareMap.get(DcMotor.class, "rightBack");
+
+        // Reverse right motors
+        frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRight.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        // Initialize other motors and servos
+        linearMotor = hardwareMap.get(DcMotor.class, "arm");
+        backArm = hardwareMap.get(DcMotor.class, "backArm");
+        gripperServo = hardwareMap.get(Servo.class, "claw");
+
+        // Set all motors to zero power
+        frontLeft.setPower(0);
+        backLeft.setPower(0);
+        frontRight.setPower(0);
+        backRight.setPower(0);
+        linearMotor.setPower(0);
+        backArm.setPower(0);
+    }
+
+    @Override
+    public void start() {
+        runtime.reset();
+        // Move the robot forward, control the servo, etc.
+        executeAutonomous();
+    }
+
+    @Override
+    public void loop() {
+        // Autonomous operation is executed in the start method, so the loop can remain empty.
+    }
+
+    private void executeAutonomous() {
+        // Move forward
+        moveForward(FORWARD_DISTANCE);
+        
+        // Open the gripper
+        gripperServo.setPosition(0.12);
+        sleep(1000); // Hold open for 1 second
+
+        // Move backward (if necessary)
+        moveBackward(FORWARD_DISTANCE);
+
+        // Stop the motors
+        stopMotors();
+    }
+
+    private void moveForward(int distance) {
+        int targetPosition = frontLeft.getCurrentPosition() + distance;
+        setMotorTargetPosition(targetPosition);
+        while (frontLeft.isBusy() || backLeft.isBusy() || frontRight.isBusy() || backRight.isBusy()) {
+            // Wait for motors to reach the target position
+        }
+    }
+
+    private void moveBackward(int distance) {
+        int targetPosition = frontLeft.getCurrentPosition() - distance;
+        setMotorTargetPosition(targetPosition);
+        while (frontLeft.isBusy() || backLeft.isBusy() || frontRight.isBusy() || backRight.isBusy()) {
+            // Wait for motors to reach the target position
+        }
+    }
+
+    private void setMotorTargetPosition(int targetPosition) {
+        frontLeft.setTargetPosition(targetPosition);
+        backLeft.setTargetPosition(targetPosition);
+        frontRight.setTargetPosition(targetPosition);
+        backRight.setTargetPosition(targetPosition);
+
+        frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        frontLeft.setPower(MOTOR_POWER);
+        backLeft.setPower(MOTOR_POWER);
+        frontRight.setPower(MOTOR_POWER);
+        backRight.setPower(MOTOR_POWER);
+    }
+
+    private void stopMotors() {
+        frontLeft.setPower(0);
+        backLeft.setPower(0);
+        frontRight.setPower(0);
+        backRight.setPower(0);
+    }
+}
