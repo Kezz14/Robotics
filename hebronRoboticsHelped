@@ -1,0 +1,126 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.acmerobotics.roadrunner.Pose2d;
+import com.acmerobotics.roadrunner.PoseVelocity2d;
+import com.acmerobotics.roadrunner.Vector2d;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+
+@TeleOp
+public class HebronRoboticsTeleOp extends LinearOpMode {
+    private static DcMotor extension_motor = null;
+    private static DcMotor arm_motor = null;
+    private static CRServo intake = null;
+
+    private static int extension_target_pos;
+    private static int arm_target_pos;
+
+    final static int MAX_EXTENSION = 0;
+    final static int MIN_EXTENSION = -8000;
+    final static int MAX_ARM = 1400;
+    final static int MIN_ARM = 0;
+
+    private boolean isSlowMode = false; // New flag for slow mode
+
+    public void runOpMode() {
+        MecanumDrive drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, 0));
+
+        extension_motor = hardwareMap.get(DcMotor.class, "extension_motor");
+        arm_motor = hardwareMap.get(DcMotor.class, "arm_motor");
+        intake = hardwareMap.get(CRServo.class, "intakeServo");
+
+        extension_motor.setDirection(DcMotor.Direction.REVERSE);
+        intake.setDirection(DcMotor.Direction.REVERSE);
+
+        arm_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        extension_motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        extension_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        arm_motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        extension_target_pos = 0;
+        arm_target_pos = 0;
+
+        waitForStart();
+
+        telemetry.addData("state", "ready");
+        telemetry.update();
+
+        while (opModeIsActive()) {
+            int extension_current_pos = extension_motor.getCurrentPosition();
+            int arm_current_pos = arm_motor.getCurrentPosition();
+
+            telemetry.addData("extension_current_pos", extension_current_pos);
+            telemetry.addData("arm_current_pos", arm_current_pos);
+            telemetry.addData("left stick", gamepad2.left_stick_y);
+
+            // Check for slow mode toggle
+            if (gamepad1.y) {
+                isSlowMode = !isSlowMode; // Toggle slow mode
+                sleep(300); // Simple debounce
+            }
+
+            telemetry.addData("Slow Mode", isSlowMode ? "ON" : "OFF");
+            telemetry.update();
+
+            boolean extension = false;
+            boolean arm = false;
+
+            drive.setDrivePowers(new PoseVelocity2d(
+                    new Vector2d(
+                            -gamepad1.left_stick_y,
+                            -gamepad1.left_stick_x
+                    ),
+                    -gamepad1.right_stick_x
+            ));
+            drive.updatePoseEstimate();
+
+            if (-gamepad2.left_stick_y != 0 && extension_current_pos <= MAX_EXTENSION && extension_current_pos >= MIN_EXTENSION) {
+                extension_target_pos += (int)(50.0 * (gamepad2.left_stick_y * (isSlowMode ? 0.5 : 1.0))); // Adjust for slow mode
+                extension = true;
+            }
+
+            if (gamepad2.right_stick_y != 0 && arm_current_pos <= MAX_ARM && arm_current_pos >= MIN_ARM) {
+                arm_target_pos += (int)(20.0 * (gamepad2.right_stick_y * (isSlowMode ? 0.5 : 1.0))); // Adjust for slow mode
+                arm = true;
+            }
+
+            if (gamepad2.a) {
+                intake.setPower(1);
+            } else if (gamepad2.b) {
+                intake.setPower(-1);
+            } else {
+                intake.setPower(0);
+            }
+
+            if (!(extension || arm)) {
+                continue;
+            }
+
+            if (arm_target_pos < MIN_ARM) {
+                arm_target_pos = MIN_ARM + 1;
+            }
+            if (arm_target_pos > MAX_ARM) {
+                arm_target_pos = MAX_ARM - 1;
+            }
+
+            if (extension_target_pos < MIN_EXTENSION) {
+                extension_target_pos = MIN_EXTENSION + 1;
+            }
+            if (extension_target_pos > MAX_EXTENSION) {
+                extension_target_pos = MAX_EXTENSION - 1;
+            }
+
+            extension_motor.setTargetPosition(extension_target_pos);
+            arm_motor.setTargetPosition(arm_target_pos);
+
+            extension_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            arm_motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+            extension_motor.setPower(1);
+            arm_motor.setPower(1);
+        }
+    }
+}
