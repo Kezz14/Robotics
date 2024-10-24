@@ -1,0 +1,176 @@
+package org.firstinspires.ftc.teamcode.MechamTest;
+
+import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
+import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry;
+
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+
+@Autonomous
+public class Diagnostics extends OpMode {
+    private ElapsedTime runtime = new ElapsedTime();
+    private DcMotor frontLeft, backLeft, frontRight, backRight;
+    private DcMotor linearMotor, backArm;
+    private Servo gripperServo, flipWrist, continuousServo;
+
+    private enum State {
+        INIT,
+        MOVE_FRONT_LEFT,
+        MOVE_BACK_LEFT,
+        MOVE_FRONT_RIGHT,
+        MOVE_BACK_RIGHT,
+        MOVE_BACK_ARM,
+        MOVE_LINEAR_MOTOR,
+        OPEN_GRIPPER,
+        CLOSE_GRIPPER,
+        MOVE_WRIST_UP,
+        MOVE_WRIST_DOWN,
+        MOVE_CONTINUOUS_SERVO,
+        DONE
+    }
+
+    private State currentState = State.INIT;
+    private long actionStartTime;
+
+    @Override
+    public void init() {
+        // Initialize drive motors
+        frontLeft = hardwareMap.get(DcMotor.class, "leftFront");
+        backLeft = hardwareMap.get(DcMotor.class, "leftBack");
+        frontRight = hardwareMap.get(DcMotor.class, "rightFront");
+        backRight = hardwareMap.get(DcMotor.class, "rightBack");
+
+        // Reverse right motors
+        frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRight.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        // Initialize linear motor and back arm
+        linearMotor = hardwareMap.get(DcMotor.class, "arm");
+        backArm = hardwareMap.get(DcMotor.class, "backArm");
+
+        // Initialize servos
+        gripperServo = hardwareMap.get(Servo.class, "claw");
+        flipWrist = hardwareMap.get(Servo.class, "wrist");
+        continuousServo = hardwareMap.get(Servo.class, "intake");
+
+        // Start the first action
+        currentState = State.MOVE_FRONT_LEFT;
+        actionStartTime = System.currentTimeMillis();
+    }
+
+    @Override
+    public void loop() {
+        switch (currentState) {
+            case MOVE_FRONT_LEFT:
+                frontLeft.setPower(0.7);
+                if (elapsedTime() > 1000) {
+                    frontLeft.setPower(0);
+                    currentState = State.MOVE_BACK_LEFT;
+                    actionStartTime = System.currentTimeMillis();
+                }
+                break;
+
+            case MOVE_BACK_LEFT:
+                backLeft.setPower(0.7);
+                if (elapsedTime() > 1000) {
+                    backLeft.setPower(0);
+                    currentState = State.MOVE_FRONT_RIGHT;
+                    actionStartTime = System.currentTimeMillis();
+                }
+                break;
+
+            case MOVE_FRONT_RIGHT:
+                frontRight.setPower(0.7);
+                if (elapsedTime() > 1000) {
+                    frontRight.setPower(0);
+                    currentState = State.MOVE_BACK_RIGHT;
+                    actionStartTime = System.currentTimeMillis();
+                }
+                break;
+
+            case MOVE_BACK_RIGHT:
+                backRight.setPower(0.7);
+                if (elapsedTime() > 1000) {
+                    backRight.setPower(0);
+                    currentState = State.MOVE_LINEAR_MOTOR;
+                    actionStartTime = System.currentTimeMillis();
+                }
+                break;
+
+
+            case MOVE_BACK_ARM:
+                backArm.setPower(0.7);
+                if (elapsedTime() > 1000) {
+                    backArm.setPower(0);
+                    currentState = State.OPEN_GRIPPER;
+                    actionStartTime = System.currentTimeMillis();
+                }
+                break;
+            case MOVE_LINEAR_MOTOR:
+                linearMotor.setPower(0.7);
+                if (elapsedTime() > 1000) {
+                    linearMotor.setPower(0);
+                    currentState = State.MOVE_BACK_ARM;
+                    actionStartTime = System.currentTimeMillis();
+                }
+                break;
+
+            case OPEN_GRIPPER:
+                gripperServo.setPosition(0.12);
+                if (elapsedTime() > 1000) {
+                    currentState = State.CLOSE_GRIPPER;
+                    actionStartTime = System.currentTimeMillis();
+                }
+                break;
+
+            case CLOSE_GRIPPER:
+                gripperServo.setPosition(0);
+                if (elapsedTime() > 1000) {
+                    currentState = State.MOVE_WRIST_UP;
+                    actionStartTime = System.currentTimeMillis();
+                }
+                break;
+
+            case MOVE_WRIST_UP:
+                flipWrist.setPosition(0.69);
+                if (elapsedTime() > 1000) {
+                    currentState = State.MOVE_WRIST_DOWN;
+                    actionStartTime = System.currentTimeMillis();
+                }
+                break;
+
+            case MOVE_WRIST_DOWN:
+                flipWrist.setPosition(0);
+                if (elapsedTime() > 1000) {
+                    currentState = State.MOVE_CONTINUOUS_SERVO;
+                    actionStartTime = System.currentTimeMillis();
+                }
+                break;
+
+            case MOVE_CONTINUOUS_SERVO:
+                continuousServo.setPosition(0.0);
+                if (elapsedTime() > 1000) {
+                    currentState = State.DONE;
+                    actionStartTime = System.currentTimeMillis();
+                }
+                break;
+
+            case DONE:
+                // Do nothing or reset state if desired
+                break;
+        }
+
+        // Log telemetry data
+        telemetry.addData("Current State", currentState);
+        telemetry.update();
+    }
+
+    private long elapsedTime() {
+        return System.currentTimeMillis() - actionStartTime;
+    }
+}
