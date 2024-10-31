@@ -1,0 +1,123 @@
+package org.firstinspires.ftc.teamcode.MechamTest;
+
+import static java.lang.Thread.sleep;
+
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+
+@TeleOp(name="DEEPDIVECODEkezsoh", group="Iterative OpMode")
+public class slowerntecham extends OpMode {
+
+    // Declare OpMode members
+    private ElapsedTime runtime = new ElapsedTime();
+    private DcMotor frontLeft = null;
+    private DcMotor backLeft = null;
+    private DcMotor frontRight = null;
+    private DcMotor backRight = null;
+
+    // Declare new motors and servos
+    private DcMotor intakeMotor = null; // Intake motor
+    private DcMotor backArm = null;
+    private Servo gripperServo = null;
+    private Servo flipWrist = null;
+    private Servo continuousServo = null;
+
+    // Constants
+    private static final int INTAKE_MOTOR_MAX_POSITION = 280;
+    private static final int INTAKE_MOTOR_HOME_POSITION = 0;
+
+    // Other state variables
+    private boolean isSlowMode = false; // Slow mode toggle
+
+    @Override
+    public void init() {
+        // Initialize drive motors
+        frontLeft = hardwareMap.get(DcMotor.class, "leftFront");
+        backLeft = hardwareMap.get(DcMotor.class, "leftBack");
+        frontRight = hardwareMap.get(DcMotor.class, "rightFront");
+        backRight = hardwareMap.get(DcMotor.class, "rightBack");
+
+        // Reverse right motors
+        frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRight.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        // Initialize intake motor and set encoder behavior
+        intakeMotor = hardwareMap.get(DcMotor.class, "arm");
+        intakeMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        intakeMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        backArm = hardwareMap.get(DcMotor.class, "backArm");
+        backArm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        backArm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        // Initialize servos
+        gripperServo = hardwareMap.get(Servo.class, "claw");
+        flipWrist = hardwareMap.get(Servo.class, "wrist");
+        continuousServo = hardwareMap.get(Servo.class, "intake");
+
+        // Indicate initialization is complete
+        telemetry.addData("Status", "Initialized");
+    }
+
+    @Override
+    public void start() {
+        runtime.reset();
+    }
+
+    @Override
+    public void loop() {
+        // Drive code (omitted for brevity, as it remains unchanged)
+
+        // Gradual control for intake motor using triggers
+        double intakeMotorPower = 0.5; // Adjust as needed for gradual movement
+
+        // Extend with right trigger if below max position
+        if (gamepad2.right_trigger > 0 && intakeMotor.getCurrentPosition() < INTAKE_MOTOR_MAX_POSITION) {
+            intakeMotor.setPower(intakeMotorPower * gamepad2.right_trigger);
+        }
+        // Retract with left trigger if above home position
+        else if (gamepad2.left_trigger > 0 && intakeMotor.getCurrentPosition() > INTAKE_MOTOR_HOME_POSITION) {
+            intakeMotor.setPower(-intakeMotorPower * gamepad2.left_trigger);
+        }
+        // Stop motor if no trigger is pressed
+        else {
+            intakeMotor.setPower(0);
+        }
+
+        // Immediate retraction to home position with B button
+        if (gamepad2.b) {
+            intakeMotor.setTargetPosition(INTAKE_MOTOR_HOME_POSITION);
+            intakeMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            intakeMotor.setPower(1.0); // Full power to quickly retract
+        }
+
+        // Telemetry data for motors and servos
+        telemetry.addData("Intake Motor Position", intakeMotor.getCurrentPosition());
+        telemetry.addData("Gripper Servo Position", gripperServo.getPosition());
+        telemetry.addData("Flip Wrist Position", flipWrist.getPosition());
+        telemetry.addData("Back Arm Position", backArm.getCurrentPosition());
+        telemetry.addData("Front Left Ticks", frontLeft.getCurrentPosition());
+        telemetry.addData("Back Left Ticks", backLeft.getCurrentPosition());
+        telemetry.addData("Front Right Ticks", frontRight.getCurrentPosition());
+        telemetry.addData("Back Right Ticks", backRight.getCurrentPosition());
+
+        // Add telemetry for slow mode status
+        telemetry.addData("Slow Mode", isSlowMode ? "ON" : "OFF");
+
+        // Update telemetry
+        telemetry.update();
+    }
+
+    // Optional debounce function (from original code)
+    private void debounceDelay() {
+        try {
+            sleep(300); // Debounce delay
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
