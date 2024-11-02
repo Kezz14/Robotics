@@ -1,0 +1,89 @@
+package org.firstinspires.ftc.teamcode.MechamTest;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
+
+@TeleOp(name = "INTAKE BUT BETTER")
+public class IntakeKez extends LinearOpMode {
+    private DcMotor intakeMotor = null;
+    private DcMotor intakeMotor2 = null;
+    private static final int INTAKE_MAX = 1750;                                                       ;
+    private static final int INTAKE_MIN = 0;
+    private static final double intakeMotorPower = .8;
+    private Servo intakeServo = null; // Servo for intake mechanism
+    private Servo continuousServo1 = null; // Continuous servo 1
+    private Servo continuousServo2 = null; // Continuous servo 2
+
+
+    @Override
+    public void runOpMode() throws InterruptedException {
+        intakeMotor = hardwareMap.get(DcMotor.class, "barm");
+        intakeMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER); // Change to RUN_WITHOUT_ENCODER
+        intakeMotor2 = hardwareMap.get(DcMotor.class, "parm");
+        intakeMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        intakeMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER); // Change to RUN_WITHOUT_ENCODER
+
+        intakeMotor2.setDirection(DcMotorSimple.Direction.REVERSE);
+        intakeServo = hardwareMap.get(Servo.class, "intakeServo"); // Initialize the intake servo
+        continuousServo1 = hardwareMap.get(Servo.class, "cSv1"); // Initialize continuous servo 1
+        continuousServo2 = hardwareMap.get(Servo.class, "cSv2"); // Initialize continuous servo 2
+
+        waitForStart();
+
+        while (opModeIsActive()) {
+            // Control for intake motor using triggers
+            if (gamepad2.right_trigger > 0 && intakeMotor.getCurrentPosition() < INTAKE_MAX) {
+                intakeMotor.setPower(intakeMotorPower * gamepad2.right_trigger);
+            } else if (gamepad2.left_trigger > 0 && intakeMotor.getCurrentPosition() > INTAKE_MIN) {
+                intakeMotor.setPower(-intakeMotorPower * gamepad2.left_trigger);
+            } else {
+                intakeMotor.setPower(0);
+            }
+
+            // Immediate retraction to home position with B button
+            if (gamepad2.b) {
+                intakeMotor.setTargetPosition(INTAKE_MIN);
+                intakeMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                intakeMotor.setPower(1.0); // Full power to quickly retract
+            }
+            if (gamepad2.right_trigger > 0 && intakeMotor2.getCurrentPosition() < INTAKE_MAX) {
+                intakeMotor2.setPower(intakeMotorPower * gamepad2.right_trigger);
+            } else if (gamepad2.left_trigger > 0 && intakeMotor2.getCurrentPosition() > INTAKE_MIN) {
+                intakeMotor2.setPower(-intakeMotorPower * gamepad2.left_trigger);
+            } else {
+                intakeMotor2.setPower(0);
+            }
+            if (intakeMotor.getCurrentPosition() >= 1700 || intakeMotor2.getCurrentPosition() >= 1700) {
+                intakeServo.setPosition(1.0); // Move to fully extended position
+            } else {
+                intakeServo.setPosition(0.0); // Move to fully retracted position
+            }
+            if (gamepad1.left_bumper) {
+                continuousServo1.setPosition(0.0); // Move left (adjust position as needed)
+                continuousServo2.setPosition(0.0); // Move left (adjust position as needed)
+            } else if (gamepad1.right_bumper) {
+                continuousServo1.setPosition(1.0); // Move right (adjust position as needed)
+                continuousServo2.setPosition(1.0); // Move right (adjust position as needed)
+            } else {
+                continuousServo1.setPosition(0.5); // Stop (adjust for neutral position)
+                continuousServo2.setPosition(0.5); // Stop (adjust for neutral position)
+            }
+
+            // Immediate retraction to home position with B button
+            if (gamepad2.b) {
+                intakeMotor.setTargetPosition(INTAKE_MIN);
+                intakeMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                intakeMotor.setPower(1.0); // Full power to quickly retract
+            }
+
+            // Telemetry data for the intake motor
+            telemetry.addData("Intake Motor Position", intakeMotor.getCurrentPosition());
+            telemetry.addData("Intake 2 Motor Position", intakeMotor2.getCurrentPosition());
+            telemetry.update();
+        }
+    }
+}
