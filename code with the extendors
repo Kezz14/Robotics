@@ -1,0 +1,170 @@
+package org.firstinspires.ftc.teamcode.MechamTest;
+
+import static java.lang.Thread.sleep;
+
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+
+@TeleOp(name="DEEPDIVECODEkezsoh", group="Iterative OpMode")
+public class slowerntecham extends OpMode {
+
+    // Declare OpMode members
+    private ElapsedTime runtime = new ElapsedTime();
+    private DcMotor frontLeft = null;
+    private DcMotor backLeft = null;
+    private DcMotor frontRight = null;
+    private DcMotor backRight = null;
+    private DcMotor intakeMotor = null;
+    private DcMotor linearMotor = null;
+    private Servo gripperServo = null;
+    private Servo flipWrist = null;
+    private Servo continuousServo = null;
+
+    private boolean isSlowMode = false;
+    private double intakePower = 0; // Current power for the intake motor
+    private final double INCREMENT = 0.05; // Power increment step
+    private final double MAX_INTAKE_POWER = 1.0; // Maximum power for intake motor
+    private boolean bButtonPressed = false; // Track B button state
+
+    private static final int LINEAR_MIN = 0; // Min position for linear motor
+    private static final double RETRACT_POWER = 1.0; // Power for retracting
+
+    @Override
+    public void init() {
+        // Initialize drive motors
+        frontLeft = hardwareMap.get(DcMotor.class, "leftFront");
+        backLeft = hardwareMap.get(DcMotor.class, "leftBack");
+        frontRight = hardwareMap.get(DcMotor.class, "rightFront");
+        backRight = hardwareMap.get(DcMotor.class, "rightBack");
+
+        // Reverse right motors
+        frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRight.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        // Initialize linear motor and set encoder behavior
+        linearMotor = hardwareMap.get(DcMotor.class, "arm");
+        linearMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        linearMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        // Initialize servos
+        gripperServo = hardwareMap.get(Servo.class, "claw");
+        flipWrist = hardwareMap.get(Servo.class, "wrist");
+        continuousServo = hardwareMap.get(Servo.class, "intake");
+        intakeMotor = hardwareMap.get(DcMotor.class, "intake_motor");
+
+        telemetry.addData("Status", "Initialized");
+    }
+
+    @Override
+    public void start() {
+        runtime.reset();
+    }
+
+    @Override
+    public void loop() {
+        // Check for slow mode toggle
+        if (gamepad1.y && !isSlowMode) {
+            isSlowMode = true; // Enable slow mode
+            debounceDelay();
+        } else if (gamepad1.y && isSlowMode) {
+            isSlowMode = false; // Disable slow mode
+            debounceDelay();
+        }
+
+        // Setup mecanum wheel drive variables
+        double y = -gamepad1.left_stick_y;
+        double x = gamepad1.left_stick_x;
+        double turn = -gamepad1.right_stick_x;
+
+        double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(turn), 0.2);
+        double speedFactor = isSlowMode ? 0.45 : 0.75;
+
+        // Calculate power for each wheel
+        double frontLeftPower = ((y + x + turn) / denominator) * speedFactor;
+        double backLeftPower = ((y - x + turn) / denominator) * speedFactor;
+        double frontRightPower = ((y - x - turn) / denominator) * speedFactor;
+        double backRightPower = ((y + x - turn) / denominator) * speedFactor;
+
+        // Set power to wheels
+        frontLeft.setPower(frontLeftPower);
+        backLeft.setPower(backLeftPower);
+        frontRight.setPower(frontRightPower);
+        backRight.setPower(backRightPower);
+
+        // Control linear motor using D-pad
+        if (gamepad2.dpad_up) {
+            linearMotor.setTargetPosition(linearMotor.getCurrentPosition() + 100);
+            linearMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            linearMotor.setPower(1.0);
+        } else if (gamepad2.dpad_down) {
+            linearMotor.setTargetPosition(linearMotor.getCurrentPosition() - 100);
+            linearMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            linearMotor.setPower(1.0);
+        }
+
+        // Immediately set linear motor back to original position using B button
+        if (gamepad2.b && !bButtonPressed) {
+            bButtonPressed = true; // Set the button state to pressed
+            linearMotor.setTargetPosition(LINEAR_MIN); // Set to original position
+            linearMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            linearMotor.setPower(RETRACT_POWER); // Use fast power
+            telemetry.addData("B Button Status", "Pressed - Linear Motor moving to 0");
+        }
+
+        // Reset B button press state
+        if (!gamepad2.b) {
+            bButtonPressed = false;
+        }
+
+        // Intake motor control
+        if (gamepad2.right_trigger > 0.5) {
+            if (intakePower < MAX_INTAKE_POWER) {
+                intakePower += INCREMENT; // Increment power
+            }
+        } else {
+            if (intakePower > 0) {
+                intakePower -= INCREMENT; // Decrement power
+            }
+        }
+        intakeMotor.setPower(intakePower);
+
+        // Toggle clockwise rotation using X button
+        if (gamepad1.x) {
+            continuousServo.setPosition(1.0); // Example position
+        }
+
+        // Toggle servo open/close with X button
+        if (gamepad2.x) {
+            gripperServo.setPosition(gripperServo.getPosition() == 0.0 ? 0.12 : 0.0);
+        }
+
+        // Toggle wrist with A button
+        if (gamepad2.a) {
+            flipWrist.setPosition(flipWrist.getPosition() == 0.0 ? 0.69 : 0.0);
+        }
+
+        // Telemetry data for motors and servos
+        telemetry.addData("Linear Motor Position", linearMotor.getCurrentPosition());
+        telemetry.addData("Gripper Servo Position", gripperServo.getPosition());
+        telemetry.addData("Flip Wrist Position", flipWrist.getPosition());
+        telemetry.addData("Front Left Ticks", frontLeft.getCurrentPosition());
+        telemetry.addData("Back Left Ticks", backLeft.getCurrentPosition());
+        telemetry.addData("Front Right Ticks", frontRight.getCurrentPosition());
+        telemetry.addData("Back Right Ticks", backRight.getCurrentPosition());
+        telemetry.addData("Intake Motor Power", intakePower);
+        telemetry.addData("Slow Mode", isSlowMode ? "ON" : "OFF");
+        telemetry.update();
+    }
+
+    private void debounceDelay() {
+        try {
+            sleep(300); // Debounce delay
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
