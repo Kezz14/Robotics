@@ -15,6 +15,8 @@ public class fullNewCode extends OpMode {
 
 
     // Declare OpMode members
+    private static final int INTAKE_MAX = 1050;                                                       ;
+    private static final int INTAKE_MIN = 0;
     private ElapsedTime runtime = new ElapsedTime();
     private boolean isServoOpen = false;
     private boolean isWristUsed = false;
@@ -33,10 +35,7 @@ public class fullNewCode extends OpMode {
     private Servo continuousServo1 = null; // Continuous Servo 1
 
 
-    private static final int INTAKE_MAX = 1000; // Updated max position
-    private static final int INTAKE_MIN = 0;
-    private static final double INTAKE_MOTOR_POWER = 0.9;
-    private static final double RETRACT_POWER = 1.0; // Power for retraction
+
 
 
     private boolean bButtonPressed = false;  // Flag for single button press logic
@@ -47,7 +46,7 @@ public class fullNewCode extends OpMode {
     private boolean lastXButtonState = false;
     // Variables for control
     private boolean isSlowMode = false;
-    private double intakeMotorPower = 0.9; // Power for intake motors
+    private double intakeMotorPower = 0.8; // Power for intake motors
 
 
     // Flags for intake servo
@@ -59,6 +58,7 @@ public class fullNewCode extends OpMode {
     @Override
     public void init() {
         // Initialize drive motors
+
         frontLeft = hardwareMap.get(DcMotor.class, "leftFront");
         backLeft = hardwareMap.get(DcMotor.class, "leftBack");
         frontRight = hardwareMap.get(DcMotor.class, "rightFront");
@@ -104,6 +104,18 @@ public class fullNewCode extends OpMode {
 
     @Override
     public void loop() {
+
+        if (gamepad2.right_trigger > 0 && intakeMotor.getCurrentPosition() < INTAKE_MAX) {
+            intakeMotor.setPower(-intakeMotorPower * gamepad2.right_trigger);
+            intakeMotor2.setPower(-intakeMotorPower * gamepad2.right_trigger);
+        } else if (gamepad2.left_trigger > 0 && intakeMotor.getCurrentPosition() > INTAKE_MIN) {
+            intakeMotor.setPower(intakeMotorPower * gamepad2.left_trigger);
+            intakeMotor2.setPower(intakeMotorPower * gamepad2.left_trigger);
+        } else {
+            intakeMotor.setPower(0);
+            intakeMotor2.setPower(0);
+        }
+
         // Check for slow mode toggle
         if (gamepad1.y && !isSlowMode) {
             isSlowMode = true; // Enable slow mode
@@ -156,16 +168,7 @@ public class fullNewCode extends OpMode {
 
 
         // Intake motor control (Gamepad 2)
-       if (gamepad2.right_trigger > 0 && intakeMotor.getCurrentPosition() < INTAKE_MAX) {
-            intakeMotor.setPower(intakeMotorPower * gamepad2.right_trigger);
-            intakeMotor2.setPower(intakeMotorPower * gamepad2.right_trigger);
-        } else if (gamepad2.left_trigger > 0 && intakeMotor.getCurrentPosition() > INTAKE_MIN) {
-            intakeMotor.setPower(intakeMotorPower * gamepad2.left_trigger);
-            intakeMotor2.setPower(intakeMotorPower * gamepad2.left_trigger);
-        } else {
-            intakeMotor.setPower(0);  // Stop intake motors when no triggers are pressed
-            intakeMotor2.setPower(0); // Same for second intake motor
-        }
+
 
 
 // Control intake wrist position with A and B buttons on gamepad1
@@ -267,3 +270,4 @@ public class fullNewCode extends OpMode {
             throw new RuntimeException(e);
         }
     }
+}
