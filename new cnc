@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 @TeleOp(name="cnc new robqasdfghuiot Test", group="Iterative OpMode")
-public class Backer extends OpMode {
+public class cnc extends OpMode {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
     private DcMotor frontLeft = null;
@@ -102,7 +102,7 @@ public class Backer extends OpMode {
         }
 
         if (gamepad1.b) {
-            wristServo.setPosition(0.0);  // Move wrist down (e.g., 0.0 position)
+            wristServo.setPosition(0.2);  // Move wrist down (e.g., 0.0 position)
         } else if (gamepad1.a) {
             wristServo.setPosition(1.0);  // Move wrist back to start position (e.g., 1.0 position)
         }
