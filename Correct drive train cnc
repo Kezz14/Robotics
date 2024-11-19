@@ -1,0 +1,159 @@
+package org.firstinspires.ftc.teamcode.MechamTest;
+
+import static java.lang.Thread.sleep;
+
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+@TeleOp(name="cnc new robqasdfghuiot Test", group="Iterative OpMode")
+public class cnc extends OpMode {
+    // Declare OpMode members.
+    private ElapsedTime runtime = new ElapsedTime();
+    private DcMotor frontLeft = null;
+    private DcMotor backLeft = null;
+    private DcMotor frontRight = null;
+    private DcMotor backRight = null;
+
+    // Declare servos
+    private Servo intakeServo1 = null;
+    private Servo intakeServo2 = null;
+    private Servo wristServo = null;
+    private Servo continuousServo1 = null;
+    private Servo continuousServo2 = null;
+    private boolean isSlowMode = false;
+
+    /*
+     * Code to run ONCE when the driver hits INIT
+     */
+    @Override
+    public void init() {
+        // Initialize motors
+        frontLeft = hardwareMap.get(DcMotor.class, "front_Left");
+        backLeft = hardwareMap.get(DcMotor.class, "back_Left");
+        frontRight = hardwareMap.get(DcMotor.class, "front_Right");
+        backRight = hardwareMap.get(DcMotor.class, "back_Right");
+
+        // Reverse the right motors
+        frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRight.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        // Initialize servos
+        intakeServo1 = hardwareMap.get(Servo.class, "left_Slide");
+        intakeServo2 = hardwareMap.get(Servo.class, "right_Slide");
+        wristServo = hardwareMap.get(Servo.class, "wrist_intake");
+        continuousServo1 = hardwareMap.get(Servo.class, "intake_Right");
+        continuousServo2 = hardwareMap.get(Servo.class, "intake_Left");
+
+        // Initialize the telemetry
+        telemetry.addData("Status", "Initialized");
+    }
+
+    /*
+     * Code to run REPEATEDLY after the driver hits INIT, but before they hit PLAY
+     */
+    @Override
+    public void init_loop() {
+    }
+
+    /*
+     * Code to run ONCE when the driver hits PLAY
+     */
+    @Override
+    public void start() {
+        runtime.reset();
+    }
+
+    /*
+     * Code to run REPEATEDLY after the driver hits PLAY but before they hit STOP
+     */
+    @Override
+    public void loop() {
+        // Setup a variable for each drive wheel to save power level for telemetry
+        double frontLeftPower;
+        double backLeftPower;
+        double frontRightPower;
+        double backRightPower;
+
+        if (gamepad1.y && !isSlowMode) {
+            isSlowMode = true; // Enable slow mode
+            debounceDelay();
+        } else if (gamepad1.y && isSlowMode) {
+            isSlowMode = false; // Disable slow mode
+            debounceDelay();
+        }
+// Get the joystick values for movement and turning
+        double y = gamepad1.left_stick_y;     // Forward/Backward movement
+        double x = -gamepad1.right_stick_x;    // turning
+        double turn = gamepad1.left_stick_x; // left
+
+// Calculate speed factor based on slow mode
+        double speedFactor = isSlowMode ? 0.45 : 0.75; // Adjust speed based on mode
+
+// Set the denominator to avoid division by zero (normalize movement)
+        double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(turn), 1);
+
+// Calculate power for each motor to control movement and turning
+        frontLeftPower = ((y + x + turn) / denominator) * speedFactor;
+        backLeftPower = ((y - x + turn) / denominator) * speedFactor;
+        frontRightPower = ((y - x - turn) / denominator) * speedFactor;
+        backRightPower = ((y + x - turn) / denominator) * speedFactor;
+
+        // Set power to wheels
+        frontLeft.setPower(frontLeftPower);
+        backLeft.setPower(backLeftPower);
+        frontRight.setPower(frontRightPower);
+        backRight.setPower(backRightPower);
+
+        // Intake servos - controlled by the right trigger/left trigger
+        if (gamepad2.right_trigger > 0.5) {
+            intakeServo1.setPosition(1);  // Open intake
+            intakeServo2.setPosition(0);  // Open intake
+        } else if (gamepad2.left_trigger > 0.5) {
+            intakeServo1.setPosition(0);  // Close intake
+            intakeServo2.setPosition(1);  // Close intake
+        }
+
+        if (gamepad2.b) {
+            wristServo.setPosition(0.2);  // Move wrist down (e.g., 0.0 position)
+        } else if (gamepad2.y) {
+            wristServo.setPosition(1.0);  // Move wrist back to start position (e.g., 1.0 position)
+        }
+
+        if (gamepad1.left_bumper) {
+            continuousServo1.setPosition(0.0);
+            continuousServo2.setPosition(1.0);
+        } else if (gamepad1.right_bumper) {
+            continuousServo1.setPosition(1.0);
+            continuousServo2.setPosition(0.0);
+        } else {
+            continuousServo1.setPosition(0.5);
+            continuousServo2.setPosition(0.5);
+        }
+
+        // Show the elapsed game time and wheel power in telemetry
+        telemetry.addData("Status", "Run Time: " + runtime.toString());
+        telemetry.addData("Left", "front (%.2f), back (%.2f)", frontLeftPower, backLeftPower);
+        telemetry.addData("Right", "front (%.2f), back (%.2f)", frontRightPower, backRightPower);
+        telemetry.addData("Intake Servo", "Position1 (%.2f), Position2 (%.2f)", intakeServo1.getPosition(), intakeServo2.getPosition());
+        telemetry.addData("Wrist Servo", "Position (%.2f)", wristServo.getPosition());
+        telemetry.addData("Slow Mode", isSlowMode ? "ON" : "OFF");
+        telemetry.addData("Continuous Servos", "Position1 (%.2f), Position2 (%.2f)", continuousServo1.getPosition(), continuousServo2.getPosition());
+        telemetry.update();
+    }
+
+    /*
+     * Code to run ONCE after the driver hits STOP
+     */
+    private void debounceDelay() {
+        try {
+            sleep(300); // Debounce delay
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+}
