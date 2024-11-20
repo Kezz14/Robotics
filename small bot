@@ -1,0 +1,207 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+
+@TeleOp(name = "gb (Blocks to Java)")
+public class gb extends LinearOpMode {
+
+  private DcMotor FrontLeft;
+  private DcMotor BackLeft;
+  private DcMotor BackRight;
+  private DcMotor FrontRight;
+  private Servo Elbow;
+  private Servo Arm;
+  private Servo Wrist;
+  private Servo Claw;
+
+  boolean SLOWMODE;
+  boolean ArmMovement2;
+  double TimeHold;
+  double Wrist2;
+  boolean Claw2;
+  double Arm2;
+  double Elbow2;
+
+  /**
+   * Describe this function...
+   */
+  private void POWAAA2(double Left, double Right) {
+    FrontLeft.setPower(Left);
+    BackLeft.setPower(Left * 0.9133);
+    BackRight.setPower(Right * 0.9181);
+    FrontRight.setPower(Right * 0.8492);
+    if (SLOWMODE == true) {
+      FrontLeft.setPower(Left / 10);
+      BackLeft.setPower(Left / 10);
+      BackRight.setPower(Right / 10);
+      FrontRight.setPower(Right / 10);
+    }
+  }
+
+  /**
+   * This sample contains the bare minimum Blocks for any regular OpMode. The 3 blue
+   * Comment Blocks show where to place Initialization code (runs once, after touching the
+   * DS INIT button, and before touching the DS Start arrow), Run code (runs once, after
+   * touching Start), and Loop code (runs repeatedly while the OpMode is active, namely not
+   * Stopped).
+   */
+  @Override
+  public void runOpMode() {
+    float forward;
+    float back;
+    float turn;
+
+    FrontLeft = hardwareMap.get(DcMotor.class, "FrontLeft");
+    BackLeft = hardwareMap.get(DcMotor.class, "BackLeft");
+    BackRight = hardwareMap.get(DcMotor.class, "BackRight");
+    FrontRight = hardwareMap.get(DcMotor.class, "FrontRight");
+    Elbow = hardwareMap.get(Servo.class, "Elbow");
+    Arm = hardwareMap.get(Servo.class, "Arm");
+    Wrist = hardwareMap.get(Servo.class, "Wrist");
+    Claw = hardwareMap.get(Servo.class, "Claw");
+
+    // Put initialization blocks here.
+    SLOWMODE = false;
+    BackRight.setDirection(DcMotor.Direction.REVERSE);
+    FrontRight.setDirection(DcMotor.Direction.REVERSE);
+    Elbow.setPosition(0);
+    Arm.setPosition(1);
+    Wrist.setPosition(0.5);
+    Claw.setPosition(0);
+    Arm2 = 1;
+    Elbow2 = 1;
+    Wrist2 = 0.5;
+    Claw2 = false;
+    ArmMovement2 = true;
+    waitForStart();
+    if (opModeIsActive()) {
+      // Put run blocks here.
+      TimeHold = getRuntime();
+      while (opModeIsActive()) {
+        // Put loop blocks here.
+        forward = gamepad1.right_trigger;
+        back = 0 - gamepad1.left_trigger;
+        turn = gamepad1.left_stick_x;
+        POWAAA2(back + forward + turn, back + (forward - turn));
+        ArmMovement();
+        ElbowMovement();
+        ClawMovement();
+        WristMovement();
+        if (getRuntime() - TimeHold > 3 && SLOWMODE == false && gamepad1.a) {
+          SLOWMODE = true;
+        } else if (getRuntime() - TimeHold > 3 && SLOWMODE == true && gamepad1.a) {
+          SLOWMODE = false;
+        }
+        if (getRuntime() - TimeHold > 3 && ArmMovement2 == false && gamepad1.left_bumper) {
+          ArmMovement2 = true;
+        } else if (getRuntime() - TimeHold > 3 && ArmMovement2 == true && gamepad1.left_bumper) {
+          ArmMovement2 = false;
+        }
+        telemetry.addData("SlowMode", SLOWMODE);
+        telemetry.addData("ArmMode", ArmMovement2);
+        telemetry.update();
+      }
+    }
+  }
+
+  /**
+   * Describe this function...
+   */
+  private void ArmMovement() {
+    if (ArmMovement2 == true) {
+      if (getRuntime() - TimeHold > 3 && 0 == Arm2 && gamepad1.dpad_up) {
+        Arm.setPosition(0.5);
+        TimeHold = getRuntime();
+        Arm2 = 0.5;
+      }
+      if (getRuntime() - TimeHold > 3 && 0.5 == Arm2 && gamepad1.dpad_up) {
+        Arm.setPosition(1);
+        TimeHold = getRuntime();
+        Arm2 = 1;
+      }
+      if (getRuntime() - TimeHold > 3 && 1 == Arm2 && gamepad1.dpad_down) {
+        Arm.setPosition(0.5);
+        TimeHold = getRuntime();
+        Arm2 = 0.5;
+      }
+      if (getRuntime() - TimeHold > 3 && 0.5 == Arm2 && gamepad1.dpad_down) {
+        Arm.setPosition(0);
+        TimeHold = getRuntime();
+        Arm2 = 0;
+      }
+    }
+  }
+
+  /**
+   * Describe this function...
+   */
+  private void ElbowMovement() {
+    if (ArmMovement2 == false) {
+      if (getRuntime() - TimeHold > 3 && 0 == Elbow2 && gamepad1.dpad_up) {
+        Elbow.setPosition(0.5);
+        TimeHold = getRuntime();
+        Elbow2 = 0.5;
+      }
+      if (getRuntime() - TimeHold > 3 && 0.5 == Elbow2 && gamepad1.dpad_up) {
+        Elbow.setPosition(1);
+        TimeHold = getRuntime();
+        Elbow2 = 1;
+      }
+      if (getRuntime() - TimeHold > 3 && 1 == Elbow2 && gamepad1.dpad_down) {
+        Elbow.setPosition(0.5);
+        TimeHold = getRuntime();
+        Elbow2 = 0.5;
+      }
+      if (getRuntime() - TimeHold > 3 && 0.5 == Elbow2 && gamepad1.dpad_down) {
+        Elbow.setPosition(0);
+        TimeHold = getRuntime();
+        Elbow2 = 0;
+      }
+    }
+  }
+
+  /**
+   * Describe this function...
+   */
+  private void WristMovement() {
+    if (getRuntime() - TimeHold > 3 && 0.5 == Wrist2 && gamepad1.dpad_right) {
+      Wrist.setPosition(0);
+      TimeHold = getRuntime();
+      Wrist2 = 0;
+    }
+    if (getRuntime() - TimeHold > 3 && 0 == Wrist2 && gamepad1.dpad_left) {
+      Wrist.setPosition(0.5);
+      TimeHold = getRuntime();
+      Wrist2 = 0.5;
+    }
+    if (getRuntime() - TimeHold > 3 && 0.5 == Wrist2 && gamepad1.dpad_left) {
+      Wrist.setPosition(1);
+      TimeHold = getRuntime();
+      Wrist2 = 1;
+    }
+    if (getRuntime() - TimeHold > 3 && 1 == Wrist2 && gamepad1.dpad_right) {
+      Wrist.setPosition(0.5);
+      TimeHold = getRuntime();
+      Wrist2 = 0.5;
+    }
+  }
+
+  /**
+   * Describe this function...
+   */
+  private void ClawMovement() {
+    if (getRuntime() - TimeHold > 3 && false == Claw2 && gamepad1.b) {
+      Claw.setPosition(1);
+      TimeHold = getRuntime();
+      Claw2 = true;
+    }
+    if (getRuntime() - TimeHold > 3 && true == Claw2 && gamepad1.b) {
+      Claw.setPosition(0);
+      TimeHold = getRuntime();
+      Claw2 = false;
+    }
+  }
+}
