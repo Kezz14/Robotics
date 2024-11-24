@@ -1,0 +1,139 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+
+@Autonomous(name = "P3_ADKS_Servo_and_Steps_V3")
+public class P3_ADKS_Servo_and_Steps_V3 extends LinearOpMode {
+
+    private DcMotor motor_Left;
+    private DcMotor motor_Right;
+    private Servo arm;
+    private Servo gripper;
+    private DistanceSensor color_Sensor_DistanceSensor;
+
+    private ElapsedTime elapsed;
+    private double currentDistance;
+
+    @Override
+    public void runOpMode() {
+        // Hardware Mapping
+        motor_Left = hardwareMap.get(DcMotor.class, "motor_Left");
+        motor_Right = hardwareMap.get(DcMotor.class, "motor_Right");
+        arm = hardwareMap.get(Servo.class, "arm");
+        gripper = hardwareMap.get(Servo.class, "gripper");
+        color_Sensor_DistanceSensor = hardwareMap.get(DistanceSensor.class, "color_Sensor");
+
+        motor_Left.setDirection(DcMotor.Direction.REVERSE);
+        elapsed = new ElapsedTime();
+
+        waitForStart();
+
+        // Initial states
+        arm.setPosition(0); // Neutral arm position
+        gripper.setPosition(0); // Gripper open
+
+        while (opModeIsActive()) {
+            currentDistance = color_Sensor_DistanceSensor.getDistance(DistanceUnit.CM);
+            telemetry2("Checking for block");
+
+            if (currentDistance >= 8) {
+                // Block not detected: Move forward
+                motor_Left.setPower(0.2);
+                motor_Right.setPower(0.2);
+                telemetry2("Moving Forward");
+            } else {
+                // Block detected: Stop and perform actions
+                motor_Left.setPower(0);
+                motor_Right.setPower(0);
+                telemetry2("Block Detected");
+                pause();
+
+                // Drop the arm and open the gripper
+                arm.setPosition(1); // Arm down
+                pause();
+                gripper.setPosition(0.5); // Gripper open
+                pause();
+
+                // Wait for block removal
+                while (color_Sensor_DistanceSensor.getDistance(DistanceUnit.CM) <= 9) {
+                    telemetry2("Waiting for Block Removal...");
+                }
+
+                // Close the gripper and reset the arm
+                gripper.setPosition(0); // Gripper closed
+                pause();
+                arm.setPosition(0.8); // Neutral arm
+                pause();
+
+                // Perform a 180-degree turn
+                move(-0.2, 0.2, 2500); // 180-degree turn
+                telemetry2("180-degree turn completed");
+                break; // Proceed to the second block logic
+            }
+        }
+
+        // Handle logic for the second block
+        while (opModeIsActive()) {
+            currentDistance = color_Sensor_DistanceSensor.getDistance(DistanceUnit.CM);
+            telemetry2("Searching for second block");
+
+            if (currentDistance >= 8) {
+                // No block detected: Move forward
+                motor_Left.setPower(0.2);
+                motor_Right.setPower(0.2);
+                telemetry2("Moving Forward");
+            } else {
+                // Block detected: Stop and perform actions
+                motor_Left.setPower(0);
+                motor_Right.setPower(0);
+                telemetry2("Second Block Detected");
+                pause();
+
+                // Perform a 90-degree turn and open the gripper
+                move(0.2, -0.2, 2000); // 90-degree turn
+                gripper.setPosition(0.5); // Gripper open
+                arm.setPosition(0.9); // Neutral arm position
+                pause();
+
+                telemetry2("Sequence Completed");
+                break; // End of sequence
+            }
+        }
+    }
+
+    /**
+     * Move the robot with specified motor powers for a given duration.
+     */
+    private void move(double leftPower, double rightPower, int durationMs) {
+        motor_Left.setPower(leftPower);
+        motor_Right.setPower(rightPower);
+        sleep(durationMs);
+        motor_Left.setPower(0);
+        motor_Right.setPower(0);
+    }
+
+    /**
+     * Pause for a brief moment.
+     */
+    private void pause() {
+        sleep(2000);
+    }
+
+    /**
+     * Update telemetry with the current state.
+     */
+    private void telemetry2(String state) {
+        telemetry.addData("State", state);
+        telemetry.addData("Elapsed Time (s)", elapsed.seconds());
+        telemetry.addData("Arm Position", arm.getPosition());
+        telemetry.addData("Gripper Position", gripper.getPosition());
+        telemetry.addData("Current Distance (cm)", currentDistance);
+        telemetry.update();
+    }
+}
