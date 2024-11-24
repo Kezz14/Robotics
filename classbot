@@ -84,9 +84,9 @@ public class P3_ADKS_Servo_and_Steps_V3 extends LinearOpMode {
             telemetry2("Searching for second block");
 
             if (currentDistance >= 8) {
-                // No block detected: Move forward
-                motor_Left.setPower(0.2);
-                motor_Right.setPower(0.2);
+                // No block detected: Move Backward
+                motor_Left.setPower(-0.2);
+                motor_Right.setPower(-0.2);
                 telemetry2("Moving Forward");
             } else {
                 // Block detected: Stop and perform actions
