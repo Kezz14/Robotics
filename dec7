@@ -44,14 +44,15 @@ public class dec7 extends OpMode {
     private boolean lastXButtonState = false;
     // Variables for control
     private boolean isSlowMode = false;
-    private double intakeMotorPower = 0.8; // Power for intake motors
+
+    
 
 
     // Flags for intake servo
     private boolean isIntakeServoDown = false; // Track whether the intake servo is down (0.0 position)
 
     // Linear motor position
-    private static final int LINEAR_MIN = 0;
+    
 
     @Override
     public void init() {
@@ -101,6 +102,13 @@ public class dec7 extends OpMode {
             intakeServo1.setPosition(1);  // Open intake
             intakeServo2.setPosition(0);  // Open intake
         } else if (gamepad2.left_trigger > 0.5) {
+            intakeServo1.setPosition(0);  // Close intake
+            intakeServo2.setPosition(1);  // Close intake
+        }
+  if (gamepad1.right_trigger > 0.5) {
+            intakeServo1.setPosition(1);  // Open intake
+            intakeServo2.setPosition(0);  // Open intake
+        } else if (gamepad1.left_trigger > 0.5) {
             intakeServo1.setPosition(0);  // Close intake
             intakeServo2.setPosition(1);  // Close intake
         }
