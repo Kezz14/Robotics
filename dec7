@@ -45,7 +45,13 @@ public class dec7 extends OpMode {
     // Variables for control
     private boolean isSlowMode = false;
 
-    
+    private boolean isRightBumperPressed = false;
+private boolean isLeftBumperPressed = false;
+
+// Add these flags to keep track of the servo states
+private boolean areContinuousServosRunning = false; // Indicates whether the servos are running
+private boolean isRightServoActive = true; // True if continuousServo1 is active, false if continuousServo2 is active
+
 
 
     // Flags for intake servo
@@ -186,17 +192,42 @@ public class dec7 extends OpMode {
         }
         // Control intake servo: set to 180 degrees when intake motor reaches position 10
 
-        // Intake Continuous Servo Control (via bumpers on gamepad1)
-        if (gamepad2.left_bumper) {
-            continuousServo1.setPosition(0.0);
-            continuousServo2.setPosition(1.0);
-        } else if (gamepad2.right_bumper) {
+         if (gamepad2.right_bumper && !isRightBumperPressed) {
+        if (!areContinuousServosRunning) {
+            // Start the servos if they are not running
             continuousServo1.setPosition(1.0);
             continuousServo2.setPosition(0.0);
+            areContinuousServosRunning = true;
+            isRightServoActive = true; // Right servo is active
         } else {
-            continuousServo1.setPosition(0.5);
-            continuousServo2.setPosition(0.5);
+            // Stop the servos if they are running
+            continuousServo1.setPosition(0.5); // Set to a neutral position to stop movement
+            continuousServo2.setPosition(0.5); // Set to a neutral position to stop movement
+            areContinuousServosRunning = false;
         }
+        isRightBumperPressed = true; // Set the flag to true to prevent repeated activation
+    } else if (!gamepad2.right_bumper) {
+        isRightBumperPressed = false; // Reset the flag when the button is released
+    }
+
+    // Toggle the continuous servos with the left bumper
+    if (gamepad2.left_bumper && !isLeftBumperPressed) {
+        if (!areContinuousServosRunning) {
+            // Start the servos if they are not running
+            continuousServo1.setPosition(0.0);
+            continuousServo2.setPosition(1.0);
+            areContinuousServosRunning = true;
+            isRightServoActive = false; // Left servo is active
+        } else {
+            // Stop the servos if they are running
+            continuousServo1.setPosition(0.5); // Set to a neutral position to stop movement
+            continuousServo2.setPosition(0.5); // Set to a neutral position to stop movement
+            areContinuousServosRunning = false;
+        }
+        isLeftBumperPressed = true; // Set the flag to true to prevent repeated activation
+    } else if (!gamepad2.left_bumper) {
+        isLeftBumperPressed = false; // Reset the flag when the button is released
+    }
 
 
 
